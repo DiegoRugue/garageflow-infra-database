@@ -50,7 +50,7 @@ Deletion protection is enabled by default in every environment, final snapshots 
 Terraform 1.15.7 and the pinned AWS 6.49.0 and random 3.9.0 providers are required. Contract tooling is distributed from the GarageFlow application repository as a byte-for-byte shared interface.
 
 ```bash
-python -m pip install --requirement requirements-test.txt
+python -m pip install --require-hashes --requirement requirements-test.txt
 python -m unittest discover -s scripts/tests -v
 python -m unittest discover -s tests -v
 terraform fmt -check -recursive infra
@@ -81,3 +81,5 @@ AWS Academy sessions last about four hours. Refresh temporary credentials immedi
 This repository stops at database infrastructure. The GarageFlow application repository owns EF Core migrations and must consume the published database contract and secret in a later ordered deployment stage. Existing Phase 2 provisioning remains the supported live path until state ownership is reviewed, transferred without replacement, and the separated chain passes live smoke tests.
 
 Companion repositories: [garageflow-infra-kubernetes](https://github.com/DiegoRugue/garageflow-infra-kubernetes) owns the platform contract and [GarageFlow](https://github.com/DiegoRugue/GarageFlow) owns the application and schema migrations. The Phase 3 extraction is under review; live deployment of the new chain remains to be validated.
+
+The shared contract utility restricts input and output paths to RUNNER_TEMP, or the operating system temporary directory when RUNNER_TEMP is absent. Relative paths resolve inside that directory; absolute paths and resolved symlinks must stay within it. Test dependencies, including transitive packages, are pinned with hashes in requirements-test.txt.

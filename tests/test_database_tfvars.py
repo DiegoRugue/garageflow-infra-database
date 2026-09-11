@@ -1,6 +1,7 @@
 import copy
 import io
 import json
+import os
 import tempfile
 import unittest
 from contextlib import redirect_stderr
@@ -117,7 +118,7 @@ class BuildDatabaseTfvarsTests(unittest.TestCase):
         self.assertNotIn("eu-west-1", str(raised.exception))
 
     def test_cli_writes_json_tfvars_and_fails_closed_for_invalid_contract(self):
-        with tempfile.TemporaryDirectory() as temporary_directory:
+        with tempfile.TemporaryDirectory(dir=os.environ.get("RUNNER_TEMP") or None) as temporary_directory:
             temporary_path = Path(temporary_directory)
             contract_path = temporary_path / "platform.json"
             tfvars_path = temporary_path / "database.tfvars.json"
