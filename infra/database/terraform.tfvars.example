@@ -1,0 +1,31 @@
+environment = "homologation"
+owner       = "garageflow-team"
+expires_on  = "2026-09-30"
+
+# Deployment automation validates and generates this object from
+# contracts/v1/homologation/platform.json. It is expanded here only to make
+# local plans reproducible without another checkout or Terraform remote state.
+platform_contract = {
+  schemaVersion = "1.0"
+  environment   = "homologation"
+  producer      = "platform"
+  sourceCommit  = "0123456789abcdef0123456789abcdef01234567"
+  publishedAt   = "2026-09-11T12:00:00Z"
+  outputs = {
+    awsRegion                   = "us-east-1"
+    vpcId                       = "vpc-0123456789abcdef0"
+    publicSubnetIds             = ["subnet-00000000000000001", "subnet-00000000000000002"]
+    privateApplicationSubnetIds = ["subnet-00000000000000003", "subnet-00000000000000004"]
+    databaseSubnetIds           = ["subnet-00000000000000005", "subnet-00000000000000006"]
+    clusterName                 = "garageflow-homologation"
+    clusterSecurityGroupId      = "sg-0123456789abcdef0"
+    ecrRepositoryUrl            = "123456789012.dkr.ecr.us-east-1.amazonaws.com/garageflow-homologation"
+    apiGatewayId                = "abcdefghij"
+    apiGatewayExecutionArn      = "arn:aws:execute-api:us-east-1:123456789012:abcdefghij"
+    jwtSecretArn                = "arn:aws:secretsmanager:us-east-1:123456789012:secret:garageflow/homologation/jwt-abc123"
+    internalAuthSecretArn       = "arn:aws:secretsmanager:us-east-1:123456789012:secret:garageflow/homologation/internal-auth-abc123"
+    bootstrapSecretArn          = "arn:aws:secretsmanager:us-east-1:123456789012:secret:garageflow/homologation/bootstrap-abc123"
+    webhookSecretArn            = "arn:aws:secretsmanager:us-east-1:123456789012:secret:garageflow/homologation/webhook-abc123"
+    snsTopicArn                 = "arn:aws:sns:us-east-1:123456789012:garageflow-homologation"
+  }
+}
