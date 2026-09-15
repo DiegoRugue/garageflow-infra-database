@@ -113,6 +113,19 @@ O [workflow de deploy](.github/workflows/deploy.yml) executa após push em `deve
 
 O deploy valida conta/região, oferta RDS e contrato platform v1; gera tfvars e plano em `RUNNER_TEMP`; aplica o plano salvo, aguarda RDS e publica database v1. A aplicação consome esse contrato e executa migrations antes do rollout. Ordem: **plataforma → banco e ingress → aplicação → serverless → edge**. Credenciais e ambiente Academy duram cerca de quatro horas; renovar a sessão antes da execução. Ausência de contrato ou credenciais válidas interrompe o deploy.
 
+
+### Proteção das branches e homologação
+
+`main` representa produção e `develop` representa homologação. Configure proteção nas duas branches: PR obrigatório, CI aprovada no commit atualizado, conversas resolvidas, sem force push, exclusão ou bypass de administrador. O projeto permite zero aprovações humanas obrigatórias para viabilizar a manutenção individual; isso não dispensa PR nem CI. O check obrigatório deste repositório é **Contract and Terraform validation**, vinculado ao GitHub Actions.
+
+O deploy de homologação exige a variável **de repositório** `HOMOLOGATION_DEPLOY_ENABLED=true`. Ausente ou `false`, a CI continua executando e os jobs de implantação são ignorados. Essa variável deve estar no repositório porque a condição do job é avaliada antes de carregar o Environment. Produção mantém o deploy automático após a qualidade do mesmo commit.
+
+Para ativar homologação, prepare o Environment `homologation`, restrinja-o à branch `develop`, configure os inputs descritos neste README e credenciais Academy válidas, e habilite a variável. Execute os projetos na ordem plataforma/ingress → banco → aplicação → serverless/edge. Depois de uma validação temporária, desabilite a variável nos quatro repositórios antes da remoção dos recursos. Isso evita recriação por novos pushes; não cancela uma execução já iniciada.
+
+Estados e contratos de homologação usam seus próprios prefixos. Não execute o workflow legado de destruição da Fase 2 para remover a Fase 3. O [procedimento de encerramento de homologação](https://github.com/DiegoRugue/garageflow-infra-kubernetes#encerramento-de-homologação) descreve as dependências e os recursos compartilhados que devem permanecer.
+
+O avaliador `soat-architecture` deve ter acesso de leitura a este repositório. Em repositórios privados, o responsável deve conferir a aceitação do convite antes da entrega; o convite pendente não garante acesso. O README e os artefatos versionados permitem a revisão mesmo quando a sessão temporária da Academy estiver encerrada.
+
 ## Artefatos e referências
 
 | Artefato | Finalidade |
@@ -126,3 +139,5 @@ O deploy valida conta/região, oferta RDS e contrato platform v1; gera tfvars e 
 | [ADR dos indicadores](https://github.com/DiegoRugue/GarageFlow/blob/main/docs/architecture/adrs/0003-work-order-business-metrics.md) | Agregação diária, índice e semântica de duração |
 
 RDS não expõe Swagger/Postman nem endpoint HTTP público. O consumo funcional é documentado no [OpenAPI/Scalar da aplicação](https://github.com/DiegoRugue/GarageFlow#execução-e-documentação-da-api). O hostname privado é descoberto pelo contrato database; a URL pública da solução é administrada pela plataforma. Não executar o provisionamento monolítico da Fase 2 sobre estes mesmos recursos.
+
+A [coleção Postman da solução](https://github.com/DiegoRugue/GarageFlow/tree/main/docs/postman) reúne o catálogo público e uma jornada guiada de admin e cliente, com captura automática de tokens e identificadores.
