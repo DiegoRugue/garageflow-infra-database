@@ -14,21 +14,9 @@ Documentação principal da persistência do GarageFlow: infraestrutura RDS, esc
 
 ## Arquitetura e responsabilidades
 
-```mermaid
-flowchart LR
-    Platform[Plataforma: VPC, subnets e SG do EKS] -->|contrato platform v1| S3[(S3: metadados versionados)]
-    S3 --> Deploy[Pipeline deste projeto]
-    Deploy --> TF[Terraform: database]
-    TF --> RDS[(RDS PostgreSQL privado)]
-    TF --> SG[SG: 5432 somente do EKS]
-    TF --> Secret[Secrets Manager: banco]
-    TF -->|contrato database v1| S3
-    S3 --> AppDeploy[Deploy da aplicação]
-    Secret --> AppDeploy
-    AppDeploy --> Migration[Job de migrations EF]
-    Migration --> RDS
-    Api[API no EKS] -->|Npgsql| RDS
-```
+![Infraestrutura privada do banco de dados](docs/diagrams/database-infrastructure.png)
+
+[Fonte editável do diagrama](docs/diagrams/database-infrastructure.mmd).
 
 A [plataforma](https://github.com/DiegoRugue/garageflow-infra-kubernetes#readme) fornece VPC, duas subnets de banco e security group do cluster. Este root cria subnet group e SG do RDS, aceitando TCP 5432 somente do SG do EKS. As [funções serverless](https://github.com/DiegoRugue/garageflow-serverless#readme) consultam o cliente pela API privada e não acessam o banco diretamente.
 
@@ -53,98 +41,9 @@ A escolha reaproveita o PostgreSQL das fases anteriores e evita adicionar outro 
 
 O ER representa as tabelas de negócio e **somente FKs presentes no modelo EF**. Mostra as colunas relevantes para leitura dos relacionamentos, não o dicionário completo. A definição executável está no [snapshot EF](https://github.com/DiegoRugue/GarageFlow/blob/main/Adapters.Infrastructure/DataAccess/Migrations/GarageFlowDbContextModelSnapshot.cs) e nas [migrations](https://github.com/DiegoRugue/GarageFlow/tree/main/Adapters.Infrastructure/DataAccess/Migrations).
 
-```mermaid
-erDiagram
-    Customers |o--o| Users : "vinculo opcional unico"
-    Customers ||--o{ Vehicles : possui
-    Customers ||--o{ WorkOrders : solicita
-    VehicleBrands ||--o{ VehicleModels : agrupa
-    VehicleBrands ||--o{ Vehicles : identifica
-    VehicleModels ||--o{ Vehicles : "modelo e marca"
-    VehicleColors ||--o{ Vehicles : identifica
-    Vehicles ||--o{ WorkOrders : recebe
-    WorkOrders ||--o{ WorkOrderEstimates : contem
-    WorkOrderEstimates ||--o{ WorkOrderEstimateServiceLines : contem
-    WorkOrderEstimates ||--o{ WorkOrderEstimateInventoryLines : contem
-    Customers {
-        uuid Id PK
-        string TaxDocument UK
-        string Status
-    }
-    Users {
-        uuid Id PK
-        uuid CustomerId FK,UK "nullable"
-        string Email UK
-        string PasswordHash
-        string Role
-    }
-    VehicleBrands {
-        uuid Id PK
-        string Name
-    }
-    VehicleModels {
-        uuid Id PK
-        uuid VehicleBrandId FK
-        string Name
-    }
-    VehicleColors {
-        uuid Id PK
-        string Name
-    }
-    Vehicles {
-        uuid Id PK
-        uuid CustomerId FK
-        uuid VehicleBrandId FK
-        uuid VehicleModelId FK
-        uuid VehicleColorId FK
-        string LicensePlate UK
-    }
-    WorkOrders {
-        uuid Id PK
-        uuid CustomerId FK
-        uuid VehicleId FK
-        string Status
-        timestamp CreatedAt
-        timestamp StartedAt "nullable"
-        timestamp CompletedAt "nullable"
-    }
-    WorkOrderEstimates {
-        uuid Id PK
-        uuid WorkOrderId FK
-        string Status
-    }
-    WorkOrderEstimateServiceLines {
-        uuid Id PK
-        uuid EstimateId FK
-        uuid ServiceId "referencia sem FK"
-        string DescriptionSnapshot
-        decimal UnitPrice
-        string Status
-        timestamp StartedAt "nullable"
-        timestamp CompletedAt "nullable"
-    }
-    WorkOrderEstimateInventoryLines {
-        uuid Id PK
-        uuid EstimateId FK
-        uuid InventoryItemId "referencia sem FK"
-        string DescriptionSnapshot
-        int Quantity
-        decimal UnitCost
-        decimal UnitPrice
-    }
-    Services {
-        uuid Id PK
-        string Description
-        decimal Price
-    }
-    InventoryItems {
-        uuid Id PK
-        string Name
-        int StockQuantity
-        decimal Cost
-        decimal Price
-    }
-```
+![Relacionamentos das tabelas de negócio](docs/diagrams/business-entity-relationships.png)
+
+[Fonte editável do diagrama](docs/diagrams/business-entity-relationships.mmd).
 
 Um cliente pode ter vários veículos e OS, e no máximo um usuário vinculado; usuários administrativos podem não ter `CustomerId`. Cada OS referencia um cliente e um veículo obrigatórios. A FK composta de veículo para `(VehicleModelId, VehicleBrandId)` garante que a marca corresponda à do modelo. A compatibilidade entre dono do veículo e cliente da OS é uma regra da aplicação/domínio, não uma FK composta adicional.
 
@@ -152,35 +51,9 @@ Cada OS pode acumular orçamentos; um índice parcial limita a um orçamento `Ap
 
 As tabelas técnicas abaixo não possuem FKs para as tabelas de negócio:
 
-```mermaid
-erDiagram
-    IntegrationOutboxMessages {
-        uuid Id PK
-        string EventKey
-        uuid AggregateId "referencia logica"
-        jsonb Payload
-        string CorrelationId
-        int AttemptCount
-        timestamp NextAttemptAt
-        timestamp ProcessedAt "nullable"
-        uuid LeaseId "nullable"
-        timestamp LeaseExpiresAt "nullable"
-    }
-    EstimateDecisionInboxEvents {
-        uuid EventId PK
-        string PayloadHash
-        timestamp OccurredAt
-        timestamp ReceivedAt
-    }
-    WorkOrderIntakeRequests {
-        uuid RequestId PK
-        string PayloadHash
-        uuid WorkOrderId "nullable, sem FK"
-        jsonb ResponseJson "nullable"
-        timestamp CreatedAt
-        timestamp CompletedAt "nullable"
-    }
-```
+![Tabelas técnicas de processamento](docs/diagrams/technical-entities.png)
+
+[Fonte editável do diagrama](docs/diagrams/technical-entities.mmd).
 
 A outbox controla publicação posterior, retry e lease; não garante entrega exatamente uma vez. A inbox identifica decisões já recebidas por `EventId`. O recibo de intake vincula a chave da requisição ao hash e resultado armazenado para repetição idempotente. Não há acesso direto da Lambda a essas tabelas.
 

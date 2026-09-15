@@ -1,0 +1,13 @@
+flowchart LR
+    Platform[Plataforma: VPC, subnets e SG do EKS] -->|contrato platform v1| S3[(S3: metadados versionados)]
+    S3 --> Deploy[Pipeline deste projeto]
+    Deploy --> TF[Terraform: database]
+    TF --> RDS[(RDS PostgreSQL privado)]
+    TF --> SG[SG: 5432 somente do EKS]
+    TF --> Secret[Secrets Manager: banco]
+    TF -->|contrato database v1| S3
+    S3 --> AppDeploy[Deploy da aplicação]
+    Secret --> AppDeploy
+    AppDeploy --> Migration[Job de migrations EF]
+    Migration --> RDS
+    Api[API no EKS] -->|Npgsql| RDS
