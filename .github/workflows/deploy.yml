@@ -57,7 +57,7 @@ jobs:
   deploy:
     name: Apply database root and publish metadata
     needs: quality
-    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || (github.ref == 'refs/heads/develop' && vars.HOMOLOGATION_DEPLOY_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: ${{ github.ref_name == 'main' && 'production' || 'homologation' }}
