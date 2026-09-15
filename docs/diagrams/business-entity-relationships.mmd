@@ -1,0 +1,90 @@
+erDiagram
+    Customers |o--o| Users : "vinculo opcional unico"
+    Customers ||--o{ Vehicles : possui
+    Customers ||--o{ WorkOrders : solicita
+    VehicleBrands ||--o{ VehicleModels : agrupa
+    VehicleBrands ||--o{ Vehicles : identifica
+    VehicleModels ||--o{ Vehicles : "modelo e marca"
+    VehicleColors ||--o{ Vehicles : identifica
+    Vehicles ||--o{ WorkOrders : recebe
+    WorkOrders ||--o{ WorkOrderEstimates : contem
+    WorkOrderEstimates ||--o{ WorkOrderEstimateServiceLines : contem
+    WorkOrderEstimates ||--o{ WorkOrderEstimateInventoryLines : contem
+    Customers {
+        uuid Id PK
+        string TaxDocument UK
+        string Status
+    }
+    Users {
+        uuid Id PK
+        uuid CustomerId FK,UK "nullable"
+        string Email UK
+        string PasswordHash
+        string Role
+    }
+    VehicleBrands {
+        uuid Id PK
+        string Name
+    }
+    VehicleModels {
+        uuid Id PK
+        uuid VehicleBrandId FK
+        string Name
+    }
+    VehicleColors {
+        uuid Id PK
+        string Name
+    }
+    Vehicles {
+        uuid Id PK
+        uuid CustomerId FK
+        uuid VehicleBrandId FK
+        uuid VehicleModelId FK
+        uuid VehicleColorId FK
+        string LicensePlate UK
+    }
+    WorkOrders {
+        uuid Id PK
+        uuid CustomerId FK
+        uuid VehicleId FK
+        string Status
+        timestamp CreatedAt
+        timestamp StartedAt "nullable"
+        timestamp CompletedAt "nullable"
+    }
+    WorkOrderEstimates {
+        uuid Id PK
+        uuid WorkOrderId FK
+        string Status
+    }
+    WorkOrderEstimateServiceLines {
+        uuid Id PK
+        uuid EstimateId FK
+        uuid ServiceId "referencia sem FK"
+        string DescriptionSnapshot
+        decimal UnitPrice
+        string Status
+        timestamp StartedAt "nullable"
+        timestamp CompletedAt "nullable"
+    }
+    WorkOrderEstimateInventoryLines {
+        uuid Id PK
+        uuid EstimateId FK
+        uuid InventoryItemId "referencia sem FK"
+        string DescriptionSnapshot
+        int Quantity
+        decimal UnitCost
+        decimal UnitPrice
+    }
+    Services {
+        uuid Id PK
+        string Description
+        decimal Price
+    }
+    InventoryItems {
+        uuid Id PK
+        string Name
+        int StockQuantity
+        decimal Cost
+        decimal Price
+    }

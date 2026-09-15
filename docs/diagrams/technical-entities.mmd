@@ -1,0 +1,27 @@
+erDiagram
+    IntegrationOutboxMessages {
+        uuid Id PK
+        string EventKey
+        uuid AggregateId "referencia logica"
+        jsonb Payload
+        string CorrelationId
+        int AttemptCount
+        timestamp NextAttemptAt
+        timestamp ProcessedAt "nullable"
+        uuid LeaseId "nullable"
+        timestamp LeaseExpiresAt "nullable"
+    }
+    EstimateDecisionInboxEvents {
+        uuid EventId PK
+        string PayloadHash
+        timestamp OccurredAt
+        timestamp ReceivedAt
+    }
+    WorkOrderIntakeRequests {
+        uuid RequestId PK
+        string PayloadHash
+        uuid WorkOrderId "nullable, sem FK"
+        jsonb ResponseJson "nullable"
+        timestamp CreatedAt
+        timestamp CompletedAt "nullable"
+    }
